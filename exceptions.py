@@ -2,9 +2,9 @@ class StatusCodeNotOk(Exception):
     """Статус ответа не 200."""
 
 
-class ConnectionError(Exception):
-    """Ошибка соединения."""
+class ListError(Exception):
+    """Пришел пустой список."""
 
 
-class VariablesNotAailable(Exception):
+class ApiAnswersError(Exception):
     """Глобальные переменные недоступны."""

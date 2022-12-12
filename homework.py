@@ -1,11 +1,14 @@
-import os
-import time
-import telegram
-import Exeption
 import logging
-import requests
+import os
+import sys
+import time
 from http import HTTPStatus
+
+import requests
+import telegram
 from dotenv import load_dotenv
+
+import exceptions
 
 load_dotenv()
 
@@ -36,7 +39,7 @@ HOMEWORK_VERDICTS = {
 def check_tokens():
     """Проверка доступности переменных."""
     for token in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID):
-        if token is None:
+        if (token is None) or (not token):
             logging.critical('Отсутствует глобальная переменная')
             return False
     return True
@@ -46,8 +49,9 @@ def send_message(bot, message):
     """Отправка сообщения."""
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except Exception as error:
-        logging.error(f'error={error}, message={message}')
+    except telegram.TelegramError as error:
+        logging.error(f'message={message}')
+        raise error()
     logging.debug(f'Сообщение "{message}" отправлено')
 
 
@@ -61,10 +65,10 @@ def get_api_answer(timestamp):
             params=params
         )
         if homework_statuses.status_code != HTTPStatus.OK:
-            raise (f'{homework_statuses.status_code} != 200')
+            raise exceptions.StatusCodeNotOk()
         return homework_statuses.json()
     except requests.exceptions.RequestException as error:
-        raise Exception(f'error = {error}')
+        raise exceptions.ApiAnswersError(f'error = {error}')
 
 
 def check_response(response):
@@ -75,8 +79,9 @@ def check_response(response):
         raise TypeError('Данные приходят не в виде списка')
     try:
         return response['homeworks'][0]
-    except ConnectionError as error:
+    except KeyError as error:
         logging.error(error)
+        raise exceptions.ListError()
 
 
 def parse_status(homework):
@@ -94,7 +99,8 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        raise Exeption.VariablesNotAailable()
+        sys.exit()
+
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     while True:
@@ -103,8 +109,10 @@ def main():
             homework = check_response(response)
             message = parse_status(homework)
             send_message(bot, message)
+            logging.debug(homework)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
+            logging.critical(message)
             send_message(bot, message)
         finally:
             time.sleep(RETRY_PERIOD)
