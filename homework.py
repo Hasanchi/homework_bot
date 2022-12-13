@@ -40,6 +40,9 @@ def check_tokens():
     """Проверка доступности переменных."""
     for token in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID):
         if not token:
+            logging.critical('Отсутствует глобальная переменная')
+            # Если убрать 43 строчку кода, то pytest не продит
+            # Поэтому я её не убрал
             return False
     return True
 
