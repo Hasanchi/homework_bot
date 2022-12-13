@@ -39,8 +39,7 @@ HOMEWORK_VERDICTS = {
 def check_tokens():
     """Проверка доступности переменных."""
     for token in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID):
-        if (token is None) or (not token):
-            logging.critical('Отсутствует глобальная переменная')
+        if not token:
             return False
     return True
 
@@ -51,7 +50,7 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except telegram.TelegramError as error:
         logging.error(f'message={message}')
-        raise error()
+        raise exceptions.NotSendMessage() from error()
     logging.debug(f'Сообщение "{message}" отправлено')
 
 
@@ -67,6 +66,8 @@ def get_api_answer(timestamp):
         if homework_statuses.status_code != HTTPStatus.OK:
             raise exceptions.StatusCodeNotOk()
         return homework_statuses.json()
+    except requests.exceptions.InvalidJSONError as error:
+        raise exceptions.NotValidJson(f'error = {error}')
     except requests.exceptions.RequestException as error:
         raise exceptions.ApiAnswersError(f'error = {error}')
 
@@ -109,11 +110,13 @@ def main():
             homework = check_response(response)
             message = parse_status(homework)
             send_message(bot, message)
-            logging.debug(homework)
+            logging.debug(
+                'Получили ответ от API в'
+                f'соответсвии с документацией: "{homework}"'
+            )
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.critical(message)
-            send_message(bot, message)
         finally:
             time.sleep(RETRY_PERIOD)
 

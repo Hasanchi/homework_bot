@@ -8,3 +8,11 @@ class ListError(Exception):
 
 class ApiAnswersError(Exception):
     """Глобальные переменные недоступны."""
+
+
+class NotSendMessage(Exception):
+    """Сообщение не отправлено."""
+
+
+class NotValidJson(Exception):
+    """Не валидный json."""
