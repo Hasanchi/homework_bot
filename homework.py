@@ -40,9 +40,6 @@ def check_tokens():
     """Проверка доступности переменных."""
     for token in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID):
         if not token:
-            logging.critical('Отсутствует глобальная переменная')
-            # Если убрать 43 строчку кода, то pytest не продит
-            # Поэтому я её не убрал
             return False
     return True
 
@@ -102,6 +99,7 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
+    logging.critical('Отсутствует глобальная переменная')
     if not check_tokens():
         sys.exit()
 
@@ -117,9 +115,15 @@ def main():
                 'Получили ответ от API в'
                 f'соответсвии с документацией: "{homework}"'
             )
+            logging.debug('Отсутствие в ответе новых статусов')
+        except exceptions.NotSendMessage as error:
+            message = f'Сообщение не может быть отправлено {error}'
+            logging.critical(message)
+            raise error()
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.critical(message)
+            send_message(bot, message)
         finally:
             time.sleep(RETRY_PERIOD)
 
